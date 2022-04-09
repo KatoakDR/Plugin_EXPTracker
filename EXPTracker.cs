@@ -26,6 +26,7 @@ namespace EXPTracker
 
         private DateTime _startTime;                    //Used for TDP/Rank tracking to know how long tracking since
         private Hashtable _skillList = new Hashtable(); //Used for storing/sorting skills for display in Exp Win
+        private int _circle = 0;                        //Used for Circle tracking, this is current circle
         private int _TDP = 0;                           //Used for TDP tracking, this is current TDPs
         private int _startTDP = 0;                      //Used for TDP tracking, this is set when first checking
         private int pulseSeed = -1;                     //Used for adjusting what the 'start' pulse was
@@ -44,7 +45,7 @@ namespace EXPTracker
         private string EchoLearned = "";
         private string EchoPulsed = "";
 
-        //The following hashtables are used as alternatives to switch statments using string data which can have rather bad run time.  
+        //The following hashtables are used as alternatives to switch statments using string data which can have rather bad run time.
         private Hashtable MasterSkill;
         private class ItemMasterSkill
         {
@@ -79,7 +80,7 @@ namespace EXPTracker
             public string name = "";        //Name of skill
             public string shortname = "";   //Shortened name of skill
             public int sortLR = 0;          //Ordered value based on Reading sort (Left to Right)
-            public int sortLearning = 0;    //Ordered value based on top to bottom, THEN left to right 
+            public int sortLearning = 0;    //Ordered value based on top to bottom, THEN left to right
         }
         #endregion
 
@@ -121,7 +122,7 @@ namespace EXPTracker
         }
 
         //Required for Plugin - Called when Genie needs disable/enable the plugin (Plugins window,
-        //                      and from the CLI), or when Genie needs to know the status of the 
+        //                      and from the CLI), or when Genie needs to know the status of the
         //                      plugin (???)
         //Get:
         //      Not Known what it is used for
@@ -160,7 +161,7 @@ namespace EXPTracker
             _startTime = DateTime.Now;
             //Create hash table for all skills
             _skillList = new Hashtable(MAX_SKILL);
-            
+
             //Set Genie Variables if not already set
             init_variables();
 
@@ -384,7 +385,7 @@ namespace EXPTracker
             return Text;
         }
 
-        //Required for Plugin - 
+        //Required for Plugin -
         //Parameters:
         //              string Text:    The DIRECT text comes from the game (non-"xml")
         //              string Window:  The Window the Text was received from
@@ -407,7 +408,7 @@ namespace EXPTracker
                         if (Text.StartsWith("EXP HELP for more information"))
                         {
                             _parsing = false;
-                            //The following are set up to only modify the ExpTracker.Sleeping Variable IF it needs to be changed, 
+                            //The following are set up to only modify the ExpTracker.Sleeping Variable IF it needs to be changed,
                             //since it forces a variable save
                             if (_sleeping == 1 && _host.get_Variable("ExpTracker.TrackSleep") == "1" && _host.get_Variable("ExpTracker.Sleeping") != "1")
                             {
@@ -481,6 +482,7 @@ namespace EXPTracker
                         _parsing = true;
                         //Assume not sleeping, since there is no string when you're not.
                         _sleeping = 0;
+                        _circle = Convert.ToInt32(Text.Substring(8).Trim());
                     }
                     //Report has been finished generated (String is last line of exp output)
                     if (_report == true && Text.StartsWith("EXP HELP for more information"))
@@ -564,7 +566,7 @@ namespace EXPTracker
             return Text;
         }
 
-        //Required for Plugin - 
+        //Required for Plugin -
         //Parameters:
         //              string Text:  That "xml" text comes from the game
         public void ParseXML(string XML)
@@ -572,7 +574,7 @@ namespace EXPTracker
             //check to see if tracker is paused or not.  If paused, just return the text back to Genie
             if (_enabled == false)
                 return;
-            
+
             //trigger output of updates with XML prompt
             if (XML.Contains("prompt"))
             {
@@ -595,7 +597,7 @@ namespace EXPTracker
                     _host.SendText("EXP");
                     _ExpBrief = false;
                 }
-                
+
                 if (EchoLearned != "" && _host.get_Variable("ExpTracker.EchoExp") == "1")
                 {
                     EchoLearned = EchoLearned.Substring(0, EchoLearned.Length - 2);
@@ -609,8 +611,7 @@ namespace EXPTracker
                 if (EchoPulsed != "" && _host.get_Variable("ExpTracker.EchoExp") == "1")
                 {
                     EchoPulsed = EchoPulsed.Substring(0, EchoPulsed.Length - 2);
-                    _host.SendText("#echo " + _host.get_Variable("ExpTracker.Color.EchoPulsed") + " Pulsed: " + EchoPulsed);
-                    
+                    //_host.SendText("#echo " + _host.get_Variable("ExpTracker.Color.EchoPulsed") + " Pulsed: " + EchoPulsed);
                 }
                 if (EchoPulsed != "")
                     EchoPulsed = "";
@@ -697,7 +698,7 @@ namespace EXPTracker
             }
         }
 
-        //Required for Plugin - This method is called when clicking on the plugin 
+        //Required for Plugin - This method is called when clicking on the plugin
         //name from the Menu item Plugins
         public void Show()
         {
@@ -734,7 +735,7 @@ namespace EXPTracker
                 if (_host.get_Variable(Variable) == "")
                     init_variables(true, Variable);
             }
-/*          Removed this due to needing a way to figure out the 'seed' for when game started. 
+/*          Removed this due to needing a way to figure out the 'seed' for when game started.
             if (Variable == "gametime")
             {
 
@@ -808,14 +809,14 @@ namespace EXPTracker
             string lowestSkill = "";
             int lowestRate = 0;
             double lowestRank = 0;
-            
+
             foreach (string skill in SkillList.Split(new char[] { '|', ' ', ',' }))
             {
 
                 string skillName = skill.Replace("_", " ");
                 if (_skillList.ContainsKey(skillName))
                 {
-                    if (lowestSkill == "" || lowestRate > (_skillList[skillName] as Skill).iLearningRate) 
+                    if (lowestSkill == "" || lowestRate > (_skillList[skillName] as Skill).iLearningRate)
                     {
                         //if no skill has been named
                         //or the current lowest learning rate is higher than the current skill
@@ -847,7 +848,7 @@ namespace EXPTracker
             return lowestSkill.Trim();
         }
 
-        //Opens the settings window.  Called when a user clicks on the menu item for 
+        //Opens the settings window.  Called when a user clicks on the menu item for
         //this plugin (via above call)
         //
         //Parameters:
@@ -900,7 +901,7 @@ namespace EXPTracker
                 form.cbCountSkills.Checked = true;
             else
                 form.cbCountSkills.Checked = false;
-            
+
 
             if (_host.get_Variable("ExpTracker.ShortNames") == "1")
                 form.cbShort.Checked = true;
@@ -1025,7 +1026,7 @@ namespace EXPTracker
                     _updateExp = true;
 
                 //track changes in learning rate for building Learned/Pulsed Echos
-                //If update is coming from the Xml, you can use this data to build the string information 
+                //If update is coming from the Xml, you can use this data to build the string information
                 if (IsXML)
                     build_echo_exp(name, skill.iLearningRate, GetLearningRateInt(learningRate), type);
 
@@ -1043,7 +1044,7 @@ namespace EXPTracker
                 skill.sortLR = SortLR;
                 skill.shortname = ShortName;
 
-                //Next section builds the output string.  This will need to be recalucated for all skills if the 
+                //Next section builds the output string.  This will need to be recalucated for all skills if the
                 //output options are ever changed.
 
                 //Outputs name of skill (short or normal) & ranks
@@ -1059,7 +1060,7 @@ namespace EXPTracker
                 //Outputs Learning Rate NUMBER if set to
                 if (_host.get_Variable("ExpTracker.LearningRateNumber") == "1")
                     skill.output += String.Format("{0,8}", "(" + skill.iLearningRate + "/34)");
-                //Outputs Skill gain if set to 
+                //Outputs Skill gain if set to
                 if (_host.get_Variable("ExpTracker.ShowRankGain") == "1")
                 {
                     //Calculate Skill gain
@@ -1096,7 +1097,7 @@ namespace EXPTracker
                 };
 
                 //track changes in learning rate for building Learned/Pulsed Echos
-                //If update is coming from the Xml, you can use this data to build the string information 
+                //If update is coming from the Xml, you can use this data to build the string information
                 if (IsXML)
                     build_echo_exp(name, 0, skill.iLearningRate, type);
 
@@ -1104,7 +1105,7 @@ namespace EXPTracker
                     skill.learned = true;
                 if (type == 2)
                     skill.rankGained = true;
-                //Next section builds the output string.  This will need to be recalucated for all skills if the 
+                //Next section builds the output string.  This will need to be recalucated for all skills if the
                 //output options are ever changed.
 
                 //Outputs name of skill (short or normal) & ranks
@@ -1120,7 +1121,7 @@ namespace EXPTracker
                 //Outputs Learning Rate NUMBER if set to
                 if (_host.get_Variable("ExpTracker.LearningRateNumber") == "1")
                     skill.output += String.Format("{0,8}", "(" + skill.iLearningRate + "/34)");
-                //Outputs Skill gain if set to 
+                //Outputs Skill gain if set to
                 if (_host.get_Variable("ExpTracker.ShowRankGain") == "1")
                 {
                     //Calculate Skill gain
@@ -1162,7 +1163,7 @@ namespace EXPTracker
             _updateExp = true;
             if (name.EndsWith("Magic") && !name.StartsWith("Targeted"))
                 name = "Primary Magic";
-            
+
             Skill skill = new Skill();
             if (_skillList.ContainsKey(name))
             {
@@ -1175,7 +1176,7 @@ namespace EXPTracker
             else
             {
                 //track changes in learning rate for building Learned/Pulsed Echos
-                //If update is coming from the Xml, you can use this data to build the string information 
+                //If update is coming from the Xml, you can use this data to build the string information
                 build_echo_exp(name, 0, 0, 0);
                 _skillList.Add(name, skill);
             }
@@ -1259,7 +1260,7 @@ namespace EXPTracker
                     else
                         sortList.Sort(new MyComparer());
 
-                    //>=0 since if >0, when the last skill pulses to clear, 
+                    //>=0 since if >0, when the last skill pulses to clear,
                     //Exp window won'te update
                     if (sortList.Count >= 0)
                     {
@@ -1275,7 +1276,7 @@ namespace EXPTracker
                         }
 
                         if (_host.get_Variable("ExpTracker.CountSkills") == "1")
-                        { 
+                        {
                             _host.SendText("#echo >Experience Learning Skills: " + SkillCount.ToString());
                             _host.set_Variable("ExpTracker.LearningSkills", SkillCount.ToString());
                         }
@@ -1291,6 +1292,8 @@ namespace EXPTracker
                                 asleep = "#echo >Experience Deeply sleeping - not draining.";
                         if (asleep != "")
                             _host.SendText(asleep);
+
+                        _host.SendText("#echo >Experience Circle: " + _circle);
 
                         if (_trackingTDP)
                         {
@@ -1359,7 +1362,7 @@ namespace EXPTracker
 
             return txt;
         }
-        
+
         private void DisplayReport()
         {
             //list for sorting
@@ -1381,8 +1384,8 @@ namespace EXPTracker
                     sortList.Add(sortSkill);
                 }
             }
-            //Sort based on type of sort.  
-            //1: Reading sort 
+            //Sort based on type of sort.
+            //1: Reading sort
             if (_host.get_Variable("ExpTracker.ReportType") == "1")
                 sortList.Sort(new MyComparerLR());
             //2: By Learning Rate
@@ -1394,7 +1397,7 @@ namespace EXPTracker
             //0/Default: Alphabetical
             else
                 sortList.Sort(new MyComparer());
-            
+
             foreach (Sortskill item in sortList)
             {
                 //get the skill info from the hash table
@@ -1436,7 +1439,7 @@ namespace EXPTracker
             _host.SendText("#echo");
             _host.SendText("#echo Rank tracking reset.");
         }
-        
+
         public void ClearTracking()
         {
             //Reset TDP tracking
@@ -1478,13 +1481,13 @@ namespace EXPTracker
             }
 
             if (_host.get_Variable("ExpTracker.ShowRankGain") == "")
-            { 
+            {
                 _host.SendText("#var ExpTracker.ShowRankGain 1");
                 needsave = true;
             }
 
             if (_host.get_Variable("ExpTracker.LearningRate") == "")
-            { 
+            {
                 _host.SendText("#var ExpTracker.LearningRate 1");
                 needsave = true;
             }
@@ -1635,11 +1638,15 @@ namespace EXPTracker
             if (type == 1)
             {
                 if (diffLearningRate > 0)
+                {
                     EchoLearned = EchoLearned + name + "(+" + diffLearningRate.ToString() + "), ";
-                else
-                    EchoLearned = EchoLearned + name + "(" + diffLearningRate.ToString() + "), ";
+                }
+                //else
+                //{
+                //    EchoLearned = EchoLearned + name + "(" + diffLearningRate.ToString() + "), ";
+                //}
             }
-            else //Means this is not new experience, it's a pulse 
+            else //Means this is not new experience, it's a pulse
             {
                 if (!EchoPulsed.Contains(name))
                     EchoPulsed = EchoPulsed + name + "(" + diffLearningRate.ToString() + "), ";
